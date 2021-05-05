@@ -11,8 +11,14 @@
                 <span class="delete" @click="closeAll($event, tab)">del</span>
               </template>
               <div slot="content">
-                <div v-for="(tab1, tabIndex1) in tab.tabs" :key="tabIndex1">
-                  {{ tab1.title }}
+                <div
+                  v-for="(tab1, tabIndex1) in tab.tabs"
+                  :key="tabIndex1"
+                  class="item"
+                  @click="toggleTab(tab1)"
+                >
+                  <p>{{ tab1.title }}</p>
+                  <span class="delete" @click="closeAll($event, tab)">del</span>
                 </div>
               </div>
             </Panel>
@@ -58,6 +64,10 @@ export default {
           (tabs) => resolve(tabs[0])
         );
       });
+    },
+    toggleTab(data) {
+      chrome.windows.update(data.windowId, { focused: true });
+      chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId });
     },
     // 删除tab
     closeAll(e, data) {
@@ -177,5 +187,25 @@ export default {
 }
 .title:hover .delete {
   display: block;
+}
+
+.item {
+  display: flex;
+  align-content: center;
+  justify-content: space-between;
+  border: 1px solid red;
+  border-bottom: 1px solid #efefef;
+}
+.item p {
+  display: flex;
+  width: 100%;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+.item .delete {
+  width: 100px;
 }
 </style>
