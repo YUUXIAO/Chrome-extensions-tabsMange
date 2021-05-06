@@ -5,20 +5,41 @@
         窗口{{ item.windowId }}-{{ item.tabsCount }}
         <div slot="content">
           <Collapse simple>
-            <Panel v-for="(tab, tabIndex) in item.domains" :key="tabIndex">
-              <template class="title">
-                <span>{{ tab.domain }}</span>
-                <span class="delete" @click="closeAll($event, tab)">del</span>
-              </template>
+            <Panel
+              v-for="(tab, tabIndex) in item.domains"
+              :key="tabIndex"
+              class="title flex-x-between"
+            >
+              <!-- <template class="title flex-x-between"> -->
+              <span>{{ tab.domain }}</span>
+              <div class="delete flex-center">
+                <Icon
+                  type="md-close"
+                  color="#fff"
+                  size="30px"
+                  @click="closeAll($event, tab)"
+                />
+              </div>
+              <!-- </template> -->
               <div slot="content">
                 <div
                   v-for="(tab1, tabIndex1) in tab.tabs"
                   :key="tabIndex1"
-                  class="item"
+                  class="item flex-x-between"
                   @click="toggleTab(tab1)"
                 >
-                  <p>{{ tab1.title }}</p>
-                  <span class="delete" @click="closeAll($event, tab)">del</span>
+                  <div class="title">
+                    <img :src="tab1.favIconUrl" class="icon" />
+                    <p>{{ tab1.title }}</p>
+                  </div>
+                  <div class="delete flex-center">
+                    <Icon
+                      type="md-close"
+                      color="#fff"
+                      size="30px"
+                      @click="closeAll($event, tab1)"
+                    />
+                  </div>
                 </div>
               </div>
             </Panel>
@@ -178,34 +199,116 @@ export default {
   background-color: #555;
 }
 
-.delete {
-  margin-left: 10px;
-  border: 1px solid red;
-}
 .title {
   border: 1px solid green;
 }
-.title:hover .delete {
-  display: block;
-}
 
 .item {
-  display: flex;
-  align-content: center;
-  justify-content: space-between;
+  height: 35px;
+  padding: 3px 0 3px 12px;
   border: 1px solid red;
-  border-bottom: 1px solid #efefef;
+  background: #f3f3f5;
+  border-bottom: 1px solid #eee;
+}
+.item .title {
+  display: flex;
 }
 .item p {
   display: flex;
+  color: #555;
   width: 100%;
-
+  font-size: 12px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
   overflow: hidden;
 }
-.item .delete {
-  width: 100px;
+
+.item .icon {
+  width: 16px;
+  margin-right: 6px;
+}
+
+.delete {
+  background: #ed4014;
+  width: 40px;
+  height: 100%;
+}
+
+.ivu-collapse-content,
+.ivu-collapse-content,
+.ivu-collapse-content-box {
+  padding: 0 !important;
+}
+
+.dis-flex {
+  display: flex;
+}
+.flex-x-start {
+  display: flex;
+  justify-content: flex-start;
+}
+.flex-x-center {
+  display: flex;
+  justify-content: center;
+}
+.flex-x-between {
+  display: flex;
+  justify-content: space-between;
+}
+.flex-x-around {
+  display: flex;
+  justify-content: space-around;
+}
+.flex-x-end {
+  display: flex;
+  justify-content: flex-end;
+}
+.flex-y-center {
+  display: flex;
+  align-items: center;
+}
+.flex-dir-column {
+  flex-direction: column;
+}
+.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+.flex-y-end {
+  display: flex;
+  align-items: flex-end;
+}
+.flex {
+  flex: 1;
+}
+
+.border-box {
+  box-sizing: border-box;
+}
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-mcenter {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.trans-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>

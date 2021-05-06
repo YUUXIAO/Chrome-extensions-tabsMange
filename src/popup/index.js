@@ -4,12 +4,14 @@ import 'view-design/dist/styles/iview.css';
 import {
     Collapse,
     Panel,
-    Cell
+    Cell,
+    Icon
 } from 'iview';
 
 Vue.component('Collapse', Collapse);
 Vue.component('Panel', Panel);
 Vue.component('Cell', Cell);
+Vue.component('Icon', Icon);
 Vue.component("app-component", AppComponent);
 
 
