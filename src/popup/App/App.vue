@@ -9,7 +9,7 @@
             <Panel v-for="(tab, tabIndex) in item.domains" :key="tabIndex">
               <div class="head flex-x-between flex-y-center">
                 <div class="domain flex">{{ tab.domain }}</div>
-                <div class="delete">
+                <div class="delete flex-center">
                   <Icon
                     type="md-close"
                     color="#fff"
@@ -29,7 +29,7 @@
                     <img :src="tab1.favIconUrl" class="icon" />
                     <p class="flex">{{ tab1.title }}</p>
                   </div>
-                  <div class="delete">
+                  <div class="delete flex-center">
                     <Icon
                       type="md-close"
                       color="#fff"
@@ -55,38 +55,38 @@ export default {
       tabTypes: {},
       currentTab: {},
       curWindowId: null, // 当前窗口ID
-    }
+    };
   },
   mounted() {
-    this.initTabs()
+    this.initTabs();
   },
   computed: {
     // 是否为当前窗口
     isCurrentWindow() {
       return function(id) {
-        return id === this.curWindowId
-      }
+        return id === this.curWindowId;
+      };
     },
   },
   methods: {
     async initTabs() {
-      const ajaxArray = [this.getCurrentTab(), this.getTabLists()]
-      const [currentTab, AllTabs] = await Promise.all(ajaxArray)
-      const data = this.convertTabsData(AllTabs, currentTab)
-      console.log(data)
+      const ajaxArray = [this.getCurrentTab(), this.getTabLists()];
+      const [currentTab, AllTabs] = await Promise.all(ajaxArray);
+      const data = this.convertTabsData(AllTabs, currentTab);
+      console.log(data);
       // 获取当前窗口 Id
       chrome.windows.getCurrent(({ id }) => {
-        console.log("获取当前窗口信息")
-        console.log(id)
-        if (!id) return
-        this.curWindowId = id
-      })
-      this.tabTypes = data
+        console.log("获取当前窗口信息");
+        console.log(id);
+        if (!id) return;
+        this.curWindowId = id;
+      });
+      this.tabTypes = data;
     },
     getTabLists() {
       return new Promise((resolve) => {
-        chrome.tabs.query({}, (tabs) => resolve(tabs))
-      })
+        chrome.tabs.query({}, (tabs) => resolve(tabs));
+      });
     },
     getCurrentTab() {
       return new Promise((resolve) => {
@@ -96,66 +96,66 @@ export default {
             currentWindow: true,
           },
           (tabs) => resolve(tabs[0])
-        )
-      })
+        );
+      });
     },
     toggleTab(data) {
-      chrome.windows.update(data.windowId, { focused: true })
-      chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId })
+      chrome.windows.update(data.windowId, { focused: true });
+      chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId });
     },
     // 删除tab
     closeAll(e, data) {
-      e.stopPropagation()
-      console.log(data)
-      const ids = data.tabs.map((i) => i.id)
-      chrome.tabs.remove(ids)
-      this.initTabs()
+      e.stopPropagation();
+      console.log(data);
+      const ids = data.tabs.map((i) => i.id);
+      chrome.tabs.remove(ids);
+      this.initTabs();
     },
     extractDomain(url) {
       if (typeof url !== "string") {
-        return "Others"
+        return "Others";
       }
-      const ret = url.match(/(https?:\/\/[^/]+)/)
-      return ret ? ret[1] : "Others"
+      const ret = url.match(/(https?:\/\/[^/]+)/);
+      return ret ? ret[1] : "Others";
     },
     convertTabsData(allTabs = [], currentTab = {}) {
       // 过滤非法数据
       if (!(allTabs.length > 0 && currentTab.windowId !== undefined)) {
-        return []
+        return [];
       }
       // 分组归类
-      const hash = Object.create(null)
+      const hash = Object.create(null);
       for (const tab of allTabs) {
         // 按windowId第一层分组
-        if (!hash[tab.windowId]) hash[tab.windowId] = {}
+        if (!hash[tab.windowId]) hash[tab.windowId] = {};
 
         // 按域名第二层分组
-        const domain = this.extractDomain(tab.url)
-        if (!hash[tab.windowId][domain]) hash[tab.windowId][domain] = []
-        hash[tab.windowId][domain].push(tab)
+        const domain = this.extractDomain(tab.url);
+        if (!hash[tab.windowId][domain]) hash[tab.windowId][domain] = [];
+        hash[tab.windowId][domain].push(tab);
       }
-      console.log(hash)
+      console.log(hash);
 
       // 将hash从对象转成数组,判断当前创窗口
-      const data = []
-      const curDomain = this.extractDomain(currentTab.url)
+      const data = [];
+      const curDomain = this.extractDomain(currentTab.url);
       Object.keys(hash).forEach((windowId) => {
-        const domains = []
+        const domains = [];
         Object.keys(hash[windowId]).forEach((domain) => {
           domains.push({
             domain,
             tabs: hash[windowId][domain],
             isCurDomain: domain === curDomain,
-          })
-        })
+          });
+        });
         data.push({
           domains,
           windowId: Number(windowId),
           isCurWindow: Number(windowId) === currentTab.windowId,
           tabsCount: domains.reduce((acc, cur) => acc + cur.tabs.length, 0),
-        })
-      })
-      return data
+        });
+      });
+      return data;
 
       // 进行排序，将域名合并的tabs和当前窗口的顺序尽量往上提，保证更好的体验
       // data.forEach((window) => {
@@ -182,7 +182,7 @@ export default {
       // return data;
     },
   },
-}
+};
 </script>
 
 <style>
@@ -284,7 +284,8 @@ export default {
 }
 
 .item:hover > .delete {
-  display: block;
+  opacity: 1;
+  transition: 1s all;
 }
 
 .ivu-collapse-content,
