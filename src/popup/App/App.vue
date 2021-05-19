@@ -2,25 +2,22 @@
   <div class="popup-wrapper">
     <Collapse>
       <Panel v-for="(item, index) in tabTypes" :key="index" class="oneTabs">
+        <i class="status" v-show="isCurrentWindow(item.windowId)"></i>
         窗口{{ item.windowId }}-{{ item.tabsCount }}
         <div slot="content">
           <Collapse simple>
-            <Panel
-              v-for="(tab, tabIndex) in item.domains"
-              :key="tabIndex"
-              class="title flex-x-between"
-            >
-              <!-- <template class="title flex-x-between"> -->
-              <span>{{ tab.domain }}</span>
-              <div class="delete flex-center">
-                <Icon
-                  type="md-close"
-                  color="#fff"
-                  size="30px"
-                  @click="closeAll($event, tab)"
-                />
+            <Panel v-for="(tab, tabIndex) in item.domains" :key="tabIndex">
+              <div class="head flex-x-between flex-y-center">
+                <div class="domain flex">{{ tab.domain }}</div>
+                <div class="delete">
+                  <Icon
+                    type="md-close"
+                    color="#fff"
+                    size="30px"
+                    @click="closeAll($event, tab)"
+                  />
+                </div>
               </div>
-              <!-- </template> -->
               <div slot="content">
                 <div
                   v-for="(tab1, tabIndex1) in tab.tabs"
@@ -28,11 +25,11 @@
                   class="item flex-x-between"
                   @click="toggleTab(tab1)"
                 >
-                  <div class="title">
+                  <div class="title flex flex-x-start flex-y-center">
                     <img :src="tab1.favIconUrl" class="icon" />
-                    <p>{{ tab1.title }}</p>
+                    <p class="flex">{{ tab1.title }}</p>
                   </div>
-                  <div class="delete flex-center">
+                  <div class="delete">
                     <Icon
                       type="md-close"
                       color="#fff"
@@ -57,23 +54,39 @@ export default {
     return {
       tabTypes: {},
       currentTab: {},
-    };
+      curWindowId: null, // 当前窗口ID
+    }
   },
   mounted() {
-    this.initTabs();
+    this.initTabs()
+  },
+  computed: {
+    // 是否为当前窗口
+    isCurrentWindow() {
+      return function(id) {
+        return id === this.curWindowId
+      }
+    },
   },
   methods: {
     async initTabs() {
-      const ajaxArray = [this.getCurrentTab(), this.getTabLists()];
-      const [currentTab, AllTabs] = await Promise.all(ajaxArray);
-      const data = this.convertTabsData(AllTabs, currentTab);
-      console.log(data);
-      this.tabTypes = data;
+      const ajaxArray = [this.getCurrentTab(), this.getTabLists()]
+      const [currentTab, AllTabs] = await Promise.all(ajaxArray)
+      const data = this.convertTabsData(AllTabs, currentTab)
+      console.log(data)
+      // 获取当前窗口 Id
+      chrome.windows.getCurrent(({ id }) => {
+        console.log("获取当前窗口信息")
+        console.log(id)
+        if (!id) return
+        this.curWindowId = id
+      })
+      this.tabTypes = data
     },
     getTabLists() {
       return new Promise((resolve) => {
-        chrome.tabs.query({}, (tabs) => resolve(tabs));
-      });
+        chrome.tabs.query({}, (tabs) => resolve(tabs))
+      })
     },
     getCurrentTab() {
       return new Promise((resolve) => {
@@ -83,66 +96,66 @@ export default {
             currentWindow: true,
           },
           (tabs) => resolve(tabs[0])
-        );
-      });
+        )
+      })
     },
     toggleTab(data) {
-      chrome.windows.update(data.windowId, { focused: true });
-      chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId });
+      chrome.windows.update(data.windowId, { focused: true })
+      chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId })
     },
     // 删除tab
     closeAll(e, data) {
-      e.stopPropagation();
-      console.log(data);
-      const ids = data.tabs.map((i) => i.id);
-      chrome.tabs.remove(ids);
-      this.initTabs();
+      e.stopPropagation()
+      console.log(data)
+      const ids = data.tabs.map((i) => i.id)
+      chrome.tabs.remove(ids)
+      this.initTabs()
     },
     extractDomain(url) {
       if (typeof url !== "string") {
-        return "Others";
+        return "Others"
       }
-      const ret = url.match(/(https?:\/\/[^/]+)/);
-      return ret ? ret[1] : "Others";
+      const ret = url.match(/(https?:\/\/[^/]+)/)
+      return ret ? ret[1] : "Others"
     },
     convertTabsData(allTabs = [], currentTab = {}) {
       // 过滤非法数据
       if (!(allTabs.length > 0 && currentTab.windowId !== undefined)) {
-        return [];
+        return []
       }
       // 分组归类
-      const hash = Object.create(null);
+      const hash = Object.create(null)
       for (const tab of allTabs) {
         // 按windowId第一层分组
-        if (!hash[tab.windowId]) hash[tab.windowId] = {};
+        if (!hash[tab.windowId]) hash[tab.windowId] = {}
 
         // 按域名第二层分组
-        const domain = this.extractDomain(tab.url);
-        if (!hash[tab.windowId][domain]) hash[tab.windowId][domain] = [];
-        hash[tab.windowId][domain].push(tab);
+        const domain = this.extractDomain(tab.url)
+        if (!hash[tab.windowId][domain]) hash[tab.windowId][domain] = []
+        hash[tab.windowId][domain].push(tab)
       }
-      console.log(hash);
+      console.log(hash)
 
       // 将hash从对象转成数组,判断当前创窗口
-      const data = [];
-      const curDomain = this.extractDomain(currentTab.url);
+      const data = []
+      const curDomain = this.extractDomain(currentTab.url)
       Object.keys(hash).forEach((windowId) => {
-        const domains = [];
+        const domains = []
         Object.keys(hash[windowId]).forEach((domain) => {
           domains.push({
             domain,
             tabs: hash[windowId][domain],
             isCurDomain: domain === curDomain,
-          });
-        });
+          })
+        })
         data.push({
           domains,
           windowId: Number(windowId),
           isCurWindow: Number(windowId) === currentTab.windowId,
           tabsCount: domains.reduce((acc, cur) => acc + cur.tabs.length, 0),
-        });
-      });
-      return data;
+        })
+      })
+      return data
 
       // 进行排序，将域名合并的tabs和当前窗口的顺序尽量往上提，保证更好的体验
       // data.forEach((window) => {
@@ -169,10 +182,18 @@ export default {
       // return data;
     },
   },
-};
+}
 </script>
 
 <style>
+.status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+  background: greenyellow;
+}
+
 .popup-wrapper {
   width: 300px;
   height: 550px;
@@ -199,25 +220,51 @@ export default {
   background-color: #555;
 }
 
-.title {
-  border: 1px solid green;
+.ivu-collapse-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  border: 1px solid blue;
+}
+
+.ivu-icon-ios-arrow-forward {
+  margin-right: 20px;
 }
 
 .item {
   height: 35px;
   padding: 3px 0 3px 12px;
-  border: 1px solid red;
   background: #f3f3f5;
   border-bottom: 1px solid #eee;
 }
-.item .title {
-  display: flex;
+.domain {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  width: 100%;
 }
+
+.head {
+  border: 1px solid green;
+  width: 100%;
+}
+.head:hover > .delete {
+  opacity: 1;
+  transition: 1s all;
+}
+
+.item {
+  height: 45px;
+}
+
 .item p {
   display: flex;
   color: #555;
   width: 100%;
   font-size: 12px;
+  line-height: 25px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
@@ -225,7 +272,7 @@ export default {
 }
 
 .item .icon {
-  width: 16px;
+  width: 25px;
   margin-right: 6px;
 }
 
@@ -233,6 +280,11 @@ export default {
   background: #ed4014;
   width: 40px;
   height: 100%;
+  opacity: 0;
+}
+
+.item:hover > .delete {
+  display: block;
 }
 
 .ivu-collapse-content,
