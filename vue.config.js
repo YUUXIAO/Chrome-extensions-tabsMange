@@ -1,7 +1,6 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
-// Generate pages object
 const pagesObj = {};
 
 const chromeName = ["popup", "options"];
@@ -31,13 +30,4 @@ module.exports = {
             CopyWebpackPlugin(plugins),
         ]
     },
-
-    chainWebpack: config => {
-        // 查看打包组件大小情况
-        if (process.env.npm_config_report) {
-            config
-                .plugin('webpack-bundle-analyzer')
-                .use(require('webpack-bundle-analyzer').BundleAnalyzerPlugin)
-        }
-    }
 };

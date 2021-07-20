@@ -5,13 +5,15 @@ import {
     Collapse,
     Panel,
     Cell,
-    Icon
+    Icon,
+    Input
 } from 'iview';
 
 Vue.component('Collapse', Collapse);
 Vue.component('Panel', Panel);
 Vue.component('Cell', Cell);
 Vue.component('Icon', Icon);
+Vue.component("Input", Input);
 Vue.component("app-component", AppComponent);
 
 

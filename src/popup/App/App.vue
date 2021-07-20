@@ -1,13 +1,19 @@
 <template>
   <div class="popup-wrapper">
+    <!-- 搜索部分 -->
+    <div class="search-wrapper flex-x-start flex-y-center">
+      <Input search enter-button="搜索" v-model="searchVal" size="large" placeholder="可搜索域名或tab名称" @on-search="handleSearch"/>
+    </div>
+    <!-- tabs列表 -->
     <Collapse>
       <Panel v-for="(item, index) in tabTypes" :key="index" class="oneTabs">
         <i class="status" v-show="isCurrentWindow(item.windowId)"></i>
-        窗口{{ item.windowId }}-{{ item.tabsCount }}
-        <div slot="content">
+        {{isCurrentWindow(item.windowId)?'当前窗口':`其它窗口${index}`}}
+        <div slot="content" class="menulist">
           <Collapse simple>
-            <Panel v-for="(tab, tabIndex) in item.domains" :key="tabIndex">
-              <div class="head flex-x-between flex-y-center">
+          <template v-for="(tab, tabIndex) in item.domains" >
+            <Panel  v-if="tab.tabs.length" :key="tabIndex">
+              <div class="head flex-x-between">
                 <div class="domain flex">{{ tab.domain }}</div>
                 <div class="delete flex-center">
                   <Icon
@@ -27,19 +33,20 @@
                 >
                   <div class="title flex flex-x-start flex-y-center">
                     <img :src="tab1.favIconUrl" class="icon" />
-                    <p class="flex">{{ tab1.title }}</p>
+                    <p class="flex pointer">{{ tab1.title }}</p>
                   </div>
                   <div class="delete flex-center">
                     <Icon
                       type="md-close"
                       color="#fff"
                       size="30px"
-                      @click="closeAll($event, tab1)"
+                      @click="closeOne($event, tab1)"
                     />
                   </div>
                 </div>
               </div>
             </Panel>
+            </template>
           </Collapse>
         </div>
       </Panel>
@@ -52,8 +59,10 @@ export default {
   name: "app",
   data() {
     return {
-      tabTypes: {},
-      currentTab: {},
+      searchVal:'迭代', // 搜索值
+      tabTypes: {
+        domains:[]
+      },
       curWindowId: null, // 当前窗口ID
     };
   },
@@ -69,10 +78,32 @@ export default {
     },
   },
   methods: {
+    // 搜索关键词
+    handleSearch(){
+      console.log('搜索关键词')
+      console.log(this.tabTypes)
+      const _this = this
+
+      // 判断域名相同
+      const result = this.tabTypes.map((window)=>{
+       const domains =  window.domains.filter((item)=>{
+          return item.domain.includes(_this.searchVal)
+        })
+       return window.domains = domains
+      })
+      console.log(result)
+      // 判断tab名称相同
+
+
+    },
+
+
+
     async initTabs() {
       const ajaxArray = [this.getCurrentTab(), this.getTabLists()];
       const [currentTab, AllTabs] = await Promise.all(ajaxArray);
       const data = this.convertTabsData(AllTabs, currentTab);
+      console.log('初始化列表数据')
       console.log(data);
       // 获取当前窗口 Id
       chrome.windows.getCurrent(({ id }) => {
@@ -103,14 +134,52 @@ export default {
       chrome.windows.update(data.windowId, { focused: true });
       chrome.tabs.highlight({ tabs: data.index, windowId: data.windowId });
     },
-    // 删除tab
+    // 删除tab-全部
     closeAll(e, data) {
       e.stopPropagation();
       console.log(data);
       const ids = data.tabs.map((i) => i.id);
       chrome.tabs.remove(ids);
-      this.initTabs();
+      this.initTabsList();
     },
+    // 删除tab-单个
+    closeOne(e,data){
+        e.stopPropagation();
+        console.log(data)
+         chrome.tabs.remove(data.id);
+         this.initTabsList(data.id);
+    },
+    // 刷新窗口列表数据
+initTabsList(id){
+  const _this = this
+  if(typeof id === 'object'){
+    // 批量删除
+  }else{
+    // 单个删除
+    
+    // 1. 找出当前窗口tabs列表
+    const currentWindow = _this.tabTypes.find(i=> i.isCurWindow)
+    if(currentWindow){
+      // 2. 根据id判断排除已删除的tab
+      const currentDomains = currentWindow.domains
+      currentDomains.forEach(element => {
+         element.tabs = element.tabs.filter(i=>{
+          return i.id !== id
+        })
+      });
+   
+      // 3. 替换原来的tabs列表
+      const result = _this.tabTypes.map(t=>{
+        if(t.isCurWindow) t = currentWindow
+        return t
+      })
+      _this.tabTypes = result
+    }
+  }
+},
+
+// 判断关闭页面是否包含当前页面
+
     extractDomain(url) {
       if (typeof url !== "string") {
         return "Others";
@@ -134,8 +203,6 @@ export default {
         if (!hash[tab.windowId][domain]) hash[tab.windowId][domain] = [];
         hash[tab.windowId][domain].push(tab);
       }
-      console.log(hash);
-
       // 将hash从对象转成数组,判断当前创窗口
       const data = [];
       const curDomain = this.extractDomain(currentTab.url);
@@ -155,37 +222,49 @@ export default {
           tabsCount: domains.reduce((acc, cur) => acc + cur.tabs.length, 0),
         });
       });
+
+// 排序，将当前窗口排到最顶
+  data.sort((winA, winB) => {
+        if (winA.isCurWindow) {
+          return -1;
+        } else if (winB.isCurWindow) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+
+
+      // 将域名合并的tabs 顺序往上提
+      data.forEach((window) => {
+        window.domains.sort((domainA, domainB) => {
+          if (domainA.tabs.length > 1 && domainB.tabs.length === 1) {
+            return -1;
+          } else if (domainB.tabs.length > 1 && domainA.tabs.length === 1) {
+            return 1;
+          } else {
+            return 0;
+          }
+        });
+      });
+
+
       return data;
 
-      // 进行排序，将域名合并的tabs和当前窗口的顺序尽量往上提，保证更好的体验
-      // data.forEach((window) => {
-      //   window.domains.sort((domainA, domainB) => {
-      //     if (domainA.tabs.length > 1 && domainB.tabs.length === 1) {
-      //       return -1;
-      //     } else if (domainB.tabs.length > 1 && domainA.tabs.length === 1) {
-      //       return 1;
-      //     } else {
-      //       return 0;
-      //     }
-      //   });
-      // });
-      // data.sort((winA, winB) => {
-      //   if (winA.isCurWindow) {
-      //     return -1;
-      //   } else if (winB.isCurWindow) {
-      //     return 1;
-      //   } else {
-      //     return 0;
-      //   }
-      // });
-
-      // return data;
     },
   },
 };
 </script>
 
 <style>
+/* 搜索部分 */
+.search-wrapper{
+  padding: 12px;
+  border: 1px solid red;
+}
+
+
+
 .status {
   width: 10px;
   height: 10px;
@@ -225,7 +304,6 @@ export default {
   justify-content: flex-start;
   align-items: center;
   width: 100%;
-  border: 1px solid blue;
 }
 
 .ivu-icon-ios-arrow-forward {
@@ -238,19 +316,27 @@ export default {
   background: #f3f3f5;
   border-bottom: 1px solid #eee;
 }
+
+.menulist .ivu-icon-ios-arrow-forward{
+  display: none;
+}
+
 .domain {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
-  overflow: hidden;
+  overflow: hidden;word-break:break-all;
   width: 100%;
+  color: #2b85e4;
 }
 
 .head {
-  border: 1px solid green;
   width: 100%;
+  height: 100%;
 }
+
 .head:hover > .delete {
+  height: 100%;
   opacity: 1;
   transition: 1s all;
 }
@@ -269,11 +355,14 @@ export default {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .item .icon {
-  width: 25px;
+  width: 20px;
   margin-right: 6px;
+  border-radius: 50%;
+  border: 1px solid #dcdee2;
 }
 
 .delete {
