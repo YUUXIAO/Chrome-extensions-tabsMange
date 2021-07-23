@@ -4,14 +4,14 @@
   "description": "chrome插件扩展demo",
   "version": "0.0.1",
   "options_page": "options.html",
-  "permissions": ["tabs", "http://*/*", "https://*/*"],
+  "permissions": ["tabs", "storage", "http://*/*", "https://*/*"],
   "browser_action": {
     "default_popup": "popup.html"
   },
   "icons": {
-    "16": "src/assets/logo.png",
-    "48": "src/assets/logo.png",
-    "128": "src/assets/logo.png"
+    "16": "icons/logo.png",
+    "48": "icons/logo.png",
+    "128": "icons/logo.png"
   },
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

@@ -10,11 +10,16 @@
         @on-search="handleSearch"
       />
     </div>
+    <Button type="warning" ghost long @click="handleTabsGroup()"
+      >添加一组标签</Button
+    >
     <Collapse accordion>
       <template v-for="(item, index) in tabTypes">
         <Panel :key="index" v-if="item.domains && item.domains.length">
           <i class="status" v-show="isCurrentWindow(item.windowId)"></i>
-          {{ isCurrentWindow(item.windowId) ? `当前窗口` : `其它窗口` }}
+          {{ isCurrentWindow(item.windowId) ? `当前窗口` : `其它窗口` }}-{{
+            item.windowId
+          }}
           <div slot="content" class="menulist">
             <Collapse simple accordion>
               <template v-for="(tab, tabIndex) in item.domains">
@@ -98,6 +103,10 @@ export default {
     },
   },
   methods: {
+    // 跳转选项页面配置标签组
+    handleTabsGroup() {
+      chrome.tabs.create({ url: 'options.html' });
+    },
     // 搜索关键词
     handleSearch() {
       const _this = this;
@@ -204,6 +213,7 @@ export default {
             isCurDomain: domain === curDomain,
           });
         });
+
         result.push({
           domains,
           windowId: Number(windowId),
